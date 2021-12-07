@@ -5,8 +5,10 @@ from docx.shared import Pt
 import datetime
 import calendar
 import pandas as pd
+import sys
 
 day_to_chinese = {1: '一', 2: '二', 3: '三', 4: '四', 5: '五'}
+MINIMUM_HOUR = 4
 
 
 class WeekFreeTime:
@@ -39,19 +41,21 @@ class WeekFreeTime:
 
 
 class TableGenerator:
-    def __init__(self, curriculum):
+    def __init__(self, curriculum, begin_date, end_date):
         self.curriculum = curriculum
+        self.beg_date = begin_date
+        self.end_date = end_date
 
     def generate_table(self, hour, docx, month):
         table = docx.tables[0]
         nowrow = 1
         week_free_times = WeekFreeTime(self.curriculum)
-        for date in TableGenerator.iter_month(month):
+        for date in self.iter_day():
             if date.weekday() < 5:  # 是否為平日
                 day_free_times = week_free_times.get_free_time(date)
                 for start, end in day_free_times:
                     hour_count = end - start
-                    if hour < hour_count or hour_count >= 4:
+                    if hour < hour_count or hour_count >= MINIMUM_HOUR:
                         if hour < hour_count:
                             end = start + hour
                         hour_record_count = \
@@ -59,9 +63,13 @@ class TableGenerator:
                         hour -= hour_record_count
                         if hour_record_count != 0:
                             nowrow += 1
-                            if nowrow == 18:
-                                return True
         return hour == 0
+
+    def iter_day(self):
+        while self.beg_date < self.end_date:
+            yield self.beg_date
+            self.beg_date += datetime.timedelta(1)
+
 
     @staticmethod
     def convert_hour_count_to_valid_hour_count(hour_count):
@@ -142,29 +150,48 @@ class TableGenerator:
         r.set(qn("w:eastAsia"), "標楷體")
 
     @staticmethod
-    def iter_month(month):
-        beg_date = datetime.date(datetime.datetime.now().date().year, month, 1)
-        end_date = beg_date + datetime.timedelta(calendar.mdays[month])
-        while beg_date != end_date:
-            yield beg_date
-            beg_date += datetime.timedelta(1)
-
-    @staticmethod
     def convert_day_to_chinese(day):
         return day_to_chinese.get(day, 'None')
+
+
+class DateAdapter:
+    def __init__(self, date, default_value):
+        self.date = date
+        self.value = default_value
+
+    def get_date(self):
+        try:
+            date = datetime.date(datetime.date.today().year, month, int(self.date))
+        except ValueError:
+            if self.date == "":
+                date = datetime.date(datetime.date.today().year, month, self.value)
+            else:
+                print('invalid date!')
+                sys.exit(1)
+        return date
 
 
 docx = Document("work.docx")
 df = pd.read_excel("work.xlsx", engine='openpyxl')
 df = df.append({"一": 1, "二": 1, "三": 1, "四": 1, "五": 1}, ignore_index=True)
-table_generator = TableGenerator(df)
+
 hour = int(input("請輸入工時: "))
 month = int(input("請輸入月份: "))
+
+beg = input("請輸入工讀開始日(如不輸入則預設為月份的第一天): ")
+end = input("請輸入工讀結束日(如不輸入則預設為月份的最後一天): ")
+beg_date = DateAdapter(beg, 1).get_date()
+end_date = DateAdapter(end, calendar.mdays[month]).get_date()
+
+table_generator = TableGenerator(df, beg_date, end_date)
+
 if table_generator.generate_table(hour, docx, month):
     print('產生word完成。')
+
     TableGenerator.text_run_add_and_set(docx, 2, '*正常工作時數：', f'      {hour}     ', '小時')
     TableGenerator.text_run_add_and_set(docx, 3, '*薪資小計：', f'      {hour*160}      ', '元(A)')
     TableGenerator.text_run_add_and_set(docx, 5, '*合計應領薪資：', f'      {hour*160}     ', '元(A+B) /　工讀生指導人：______________')
+
     docx.save(str(month) + '月份工作表.docx')
 else:
     print('工作日不夠，產生word失敗。')
