@@ -25,7 +25,7 @@ def creep(select):
 def getAccountAndPassword():
     if len(sys.argv) != 3:
         print("invalid format,please type like python creeper.py 'your_username' 'your_password'")
-        return
+        exit(-1)
     account = sys.argv[1]
     password = sys.argv[2]
     return account, password
@@ -74,7 +74,8 @@ def parseGradeHtmlToData(driver):
         table[i] = table[i].text
     output = []
     for i in range(0, len(table), 5):
-        output.append([table[i], table[i + 1], table[i + 2], table[i + 3], table[i + 4]])
+        if table[i+3] != "停修":
+            output.append([table[i], table[i + 1], table[i + 2], table[i + 3], table[i + 4]])
     return output
 
 
@@ -83,10 +84,7 @@ def storeDataAndSave(output):
     sheet = wb['Sheet']
     for i in range(1, len(output) + 1):
         for j in range(1, len(output[i - 1]) + 1):
-            if j == len(output[i - 1]) - 1:
-                sheet.cell(row=i, column=j, value=int(output[i - 1][j - 1]))
-            else:
-                sheet.cell(row=i, column=j, value=output[i - 1][j - 1])
+            sheet.cell(row=i, column=j, value=output[i - 1][j - 1])
 
     wb.save('grade.xlsx')
 
