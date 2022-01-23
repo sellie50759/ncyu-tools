@@ -2,14 +2,16 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
 import re
+import pandas as pd
 import time
 import sys
 import os
-from openpyxl import Workbook
 from selenium.webdriver.chrome.options import Options
 LOGIN_URL = 'https://web085004.adm.ncyu.edu.tw/NewSite/login.aspx?Language=zh-TW'
 
 select_items = {'1': '學期成績查詢'}
+
+is_update = False
 
 
 def creep(select):
@@ -18,14 +20,16 @@ def creep(select):
     login(driver, account, password)
     changeModeToWindowMode(driver)
     jumpToGradeHtml(driver, select)
-    output = parseGradeHtmlToData(driver)
-    storeDataAndSave(output)
+    data = pd.DataFrame(parseGradeHtmlToData(driver))
+    if IsDataUpdate(data):
+        storeDataAndSave(data)
     driver.close()
 
 
 def getAccountAndPassword():
     if len(sys.argv) != 3 and len(sys.argv) != 4:
         print("invalid format,please type like python creeper.py 'your_username' 'your_password' 'output dir'(optional)")
+        os.system("pause")
         exit(-1)
     account = sys.argv[1]
     password = sys.argv[2]
@@ -80,17 +84,29 @@ def parseGradeHtmlToData(driver):
     return output
 
 
-def storeDataAndSave(output):
-    wb = Workbook()
-    sheet = wb['Sheet']
-    for i in range(1, len(output) + 1):
-        for j in range(1, len(output[i - 1]) + 1):
-            sheet.cell(row=i, column=j, value=output[i - 1][j - 1])
+def IsDataUpdate(data):
+    global is_update
+    file_path = 'grade.xlsx'
     if len(sys.argv) == 4:
-        wb.save(os.path.join(sys.argv[3], 'grade.xlsx'))
-    else:
-        wb.save('grade.xlsx')
+        file_path = os.path.join(sys.argv[3], file_path)
+    if os.path.isfile(file_path):
+        old_data = pd.read_excel(file_path, dtype={0: str}).iloc[:, :4]
+        new_data = data.iloc[:, :4]
+        if old_data.equals(new_data):
+            return False
+        else:
+            is_update = True
+            return True
+
+
+def storeDataAndSave(output):
+    file_path = 'grade.xlsx'
+    if len(sys.argv) == 4:
+        file_path = os.path.join(sys.argv[3], file_path)
+    output.to_excel(file_path, index=False)
 
 
 select = '1'
 creep(select)
+if is_update:
+    os.system("pause")
