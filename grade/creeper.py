@@ -6,13 +6,45 @@ from selenium.webdriver.chrome.options import Options
 import re
 import pandas as pd
 import time
-import sys
 import os
+import argparse
 LOGIN_URL = 'https://web085004.adm.ncyu.edu.tw/NewSite/login.aspx?Language=zh-TW'
 
 select_items = {'1': '學期成績查詢'}
 
 is_update = False
+args = {}
+file_path = ""
+
+
+def parseArgs():
+    global args, file_path
+    parser = argparse.ArgumentParser()
+    parser.add_argument("account",
+                        type=str,
+                        help="請輸入帳號")
+    parser.add_argument("password",
+                        type=str,
+                        help="請輸入密碼")
+    parser.add_argument("-o",
+                        nargs='?',
+                        type=str,
+                        default='.',
+                        help="輸出的資料夾")
+    parser.add_argument("-n",
+                        nargs='?',
+                        type=str,
+                        default='grade',
+                        help="輸出的檔案名稱")
+    args = vars(parser.parse_args())
+
+    if not os.path.isdir(args['o']):
+        raise ValueError('輸出的路徑不是資料夾')
+
+    if args['o'] == '.':
+        file_path = os.path.join(os.path.dirname(__file__), args['n']+'.xlsx')
+    else:
+        file_path = os.path.join(args['o'], args['n']+'.xlsx')
 
 
 def creep(select):
@@ -22,18 +54,14 @@ def creep(select):
     changeModeToWindowMode(driver)
     jumpToGradeHtml(driver, select)
     data = pd.DataFrame(parseGradeHtmlToData(driver))
-    if IsDataUpdate(data):
+    if isDataUpdate(data):
         storeDataAndSave(data)
     driver.close()
 
 
 def getAccountAndPassword():
-    if len(sys.argv) != 3 and len(sys.argv) != 4:
-        print("invalid format,please type like python creeper.py 'your_username' 'your_password' 'output dir'(optional)")
-        os.system("pause")
-        exit(-1)
-    account = sys.argv[1]
-    password = sys.argv[2]
+    account = args['account']
+    password = args['password']
     return account, password
 
 
@@ -85,11 +113,9 @@ def parseGradeHtmlToData(driver):
     return output
 
 
-def IsDataUpdate(data):
-    global is_update
-    file_path = 'grade.xlsx'
-    if len(sys.argv) == 4:
-        file_path = os.path.join(sys.argv[3], file_path)
+def isDataUpdate(data):
+    global is_update, file_path
+
     if os.path.isfile(file_path):
         old_data = pd.read_excel(file_path, dtype={0: str}).iloc[:, :4]
         new_data = data.iloc[:, :4]
@@ -98,19 +124,26 @@ def IsDataUpdate(data):
         else:
             is_update = True
             return True
+    else:
+        is_update = True
+        return True
 
 
 def storeDataAndSave(output):
-    file_path = 'grade.xlsx'
-    if len(sys.argv) == 4:
-        file_path = os.path.join(sys.argv[3], file_path)
+    global file_path
     output.to_excel(file_path, index=False)
 
 
-select = '1'
-creep(select)
-if is_update:
-    xl = Dispatch("Excel.Application")
-    xl.Visible = True
+if __name__ == "__main__":
+    try:
+        parseArgs()
+    except ValueError as e:
+        print(e)
+        exit(-1)
 
-    wb = xl.Workbooks.Open(r'C:\Users\Administrator\Desktop\grade.xlsx')
+    select = '1'
+    creep(select)
+    if is_update:
+        xl = Dispatch("Excel.Application")
+        xl.Visible = True
+        wb = xl.Workbooks.Open(file_path)
