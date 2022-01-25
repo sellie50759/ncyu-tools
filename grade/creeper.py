@@ -1,12 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
+from win32com.client import Dispatch
+from selenium.webdriver.chrome.options import Options
 import re
 import pandas as pd
 import time
 import sys
 import os
-from selenium.webdriver.chrome.options import Options
 LOGIN_URL = 'https://web085004.adm.ncyu.edu.tw/NewSite/login.aspx?Language=zh-TW'
 
 select_items = {'1': '學期成績查詢'}
@@ -109,4 +110,7 @@ def storeDataAndSave(output):
 select = '1'
 creep(select)
 if is_update:
-    os.system("pause")
+    xl = Dispatch("Excel.Application")
+    xl.Visible = True
+
+    wb = xl.Workbooks.Open(r'C:\Users\Administrator\Desktop\grade.xlsx')

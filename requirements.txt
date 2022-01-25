@@ -4,3 +4,4 @@ python-docx==0.8.11
 selenium==3.141.0
 pandas==0.25.3
 xlrd==1.2.0
+pywin32
