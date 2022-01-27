@@ -37,7 +37,6 @@ def parseArgs():
                         default='grade',
                         help="輸出的檔案名稱")
     args = vars(parser.parse_args())
-
     if not os.path.isdir(args['o']):
         raise ValueError('輸出的路徑不是資料夾')
 
@@ -117,7 +116,7 @@ def isDataUpdate(data):
     global is_update, file_path
 
     if os.path.isfile(file_path):
-        old_data = pd.read_excel(file_path, dtype={0: str}).iloc[:, :4]
+        old_data = pd.read_excel(file_path, dtype={0: str, 3: str}).iloc[:, :4]
         new_data = data.iloc[:, :4]
         if old_data.equals(new_data):
             return False

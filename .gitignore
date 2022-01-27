@@ -1,3 +1,7 @@
 # word file
 work_form/work.docx
+# command
+*.bat
+*.vbs
+
 
