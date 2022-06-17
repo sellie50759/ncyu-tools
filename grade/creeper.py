@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from win32com.client import Dispatch
 from selenium.webdriver.chrome.options import Options
@@ -48,7 +49,7 @@ def parseArgs():
 
 def creep(select):
     account, password = getAccountAndPassword()
-    driver = webdriver.Chrome(options=setChromeOption())
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=setChromeOption())
     login(driver, account, password)
     changeModeToWindowMode(driver)
     jumpToGradeHtml(driver, select)
