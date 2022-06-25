@@ -53,8 +53,8 @@ def creep(select):
     login(driver, account, password)
     changeModeToWindowMode(driver)
     jumpToGradeHtml(driver, select)
-    data = pd.DataFrame(parseGradeHtmlToData(driver))
-    if isDataUpdate(data):
+    data = pd.DataFrame(parseHtmlToData(driver))
+    if isUpdate(data):
         storeDataAndSave(data)
     driver.close()
 
@@ -101,16 +101,48 @@ def jumpToGradeHtml(driver, select):
     time.sleep(0.2)
 
 
-def parseGradeHtmlToData(driver):
+def parseHtmlToData(driver):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
+    output = parseGrade(soup)
+    if soup.find(id='FVSelstchf_btnShowRank'):
+        button = driver.find_element_by_id('FVSelstchf_btnShowRank')
+        button.click()
+        wait = WebDriverWait(driver, 10)
+        wait.until(lambda driver: 'FVSelstchf_lblRank' in driver.page_source)  # 等待名次顯現
+
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        rank = parseRank(soup)
+        if rank:
+            output.append(rank)
+    return output
+
+
+def parseGrade(soup):
     table = soup.find_all(id=re.compile('GridView1_ct*'))
     for i in range(len(table)):
         table[i] = table[i].text
     output = []
-    for i in range(0, len(table), 5):
-        if table[i+3] != "停修":
+    for i in range(0, len(table), 5):  # 成績
+        if table[i + 3] != "停修":
             output.append([table[i], table[i + 1], table[i + 2], table[i + 3], table[i + 4]])
     return output
+
+
+def parseRank(soup):
+    rank_msg = soup.find(id='FVSelstchf_lblRank').text
+    if rank_msg == '無名次':
+        return []
+    else:
+        rank = ''
+        for i in rank_msg:
+            if i.isdigit():
+                rank += i
+        rank = int(rank)
+        return ['名次', rank]
+
+
+def isUpdate(data):
+    return isDataUpdate(data) or isGradeUpdate()
 
 
 def isDataUpdate(data):
@@ -127,6 +159,15 @@ def isDataUpdate(data):
     else:
         is_update = True
         return True
+
+
+def isGradeUpdate():
+    global file_path
+    if os.path.isfile(file_path):
+        old_data = pd.read_excel(file_path, dtype={0: str, 3: str}).iloc[:, :4]
+        if old_data.iloc[-1][0] != '名次':
+            return True
+    return False
 
 
 def storeDataAndSave(output):
