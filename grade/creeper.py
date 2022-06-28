@@ -133,11 +133,8 @@ def parseRank(soup):
     if rank_msg == '無名次':
         return []
     else:
-        rank = ''
-        for i in rank_msg:
-            if i.isdigit():
-                rank += i
-        rank = int(rank)
+        pattern = re.compile(r'[0-9]+')
+        rank = int(pattern.findall(rank_msg)[-1])
         return ['名次', rank]
 
 
