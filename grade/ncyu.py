@@ -4,7 +4,7 @@ import os
 import base64
 
 LOGIN_URL = 'https://web085004.adm.ncyu.edu.tw/NewSite/login.aspx?Language=zh-TW'
-ocr = ddddocr.DdddOcr()
+ocr = ddddocr.DdddOcr(show_ad=False)
 captcha_img_path = './Captcha.jpg'
 
 
