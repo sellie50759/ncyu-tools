@@ -3,5 +3,6 @@ work_form/work.docx
 # command
 *.bat
 *.vbs
-
-
+# grade environment
+grade/env
+grade/__pycache__

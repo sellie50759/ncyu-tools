@@ -1,3 +1,5 @@
+import ddddocr
+from ncyu import login
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
@@ -5,6 +7,7 @@ from bs4 import BeautifulSoup
 from win32com.client import Dispatch
 from selenium.webdriver.chrome.options import Options
 import re
+import base64
 import pandas as pd
 import time
 import os
@@ -16,6 +19,8 @@ select_items = {'1': '學期成績查詢'}
 is_update = False
 args = {}
 file_path = ""
+ocr = ddddocr.DdddOcr()
+captcha_img_path = './Captcha.jpg'
 
 
 def parseArgs():
@@ -50,6 +55,7 @@ def parseArgs():
 def creep(select):
     account, password = getAccountAndPassword()
     driver = webdriver.Chrome(ChromeDriverManager().install(), options=setChromeOption())
+
     login(driver, account, password)
     changeModeToWindowMode(driver)
     jumpToGradeHtml(driver, select)
@@ -71,22 +77,10 @@ def setChromeOption():
     return chrome_options
 
 
-def login(driver, account, password):
-    driver.get(LOGIN_URL)  # 進入登入網站
-    act = driver.find_element_by_id("TbxAccountId")
-    act.send_keys(account)
-    pwd = driver.find_element_by_id("TbxPassword")
-    pwd.send_keys(password)  # 輸入帳號密碼
-    submit = driver.find_element_by_name("BtnPreLogin")
-    submit.click()  # 登入
-    wait = WebDriverWait(driver, 10)
-    wait.until(lambda driver: driver.current_url != LOGIN_URL)  # 等待跳轉頁面
-
-
 def changeModeToWindowMode(driver):
     mode = driver.find_element_by_id("BtnMode")
     mode.click()
-    button = driver.find_element_by_xpath("/html/body/div[4]/div[3]/button[2]")
+    button = driver.find_element_by_xpath("/html/body/div[2]/div[3]/div/button[1]")
     button.click()
     wait = WebDriverWait(driver, 10)
     wait.until(lambda driver: driver.current_url != 'https://web085004.adm.ncyu.edu.tw/NewSite/Index1.aspx')  # 等待跳轉頁面
