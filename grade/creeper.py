@@ -1,4 +1,3 @@
-import ddddocr
 from ncyu import login
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -7,20 +6,16 @@ from bs4 import BeautifulSoup
 from win32com.client import Dispatch
 from selenium.webdriver.chrome.options import Options
 import re
-import base64
 import pandas as pd
 import time
 import os
 import argparse
-LOGIN_URL = 'https://web085004.adm.ncyu.edu.tw/NewSite/login.aspx?Language=zh-TW'
 
 select_items = {'1': '學期成績查詢'}
 
 is_update = False
 args = {}
 file_path = ""
-ocr = ddddocr.DdddOcr()
-captcha_img_path = './Captcha.jpg'
 
 
 def parseArgs():
